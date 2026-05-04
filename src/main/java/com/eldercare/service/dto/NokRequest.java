@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 public record NokRequest(
+        Long id,
         @NotBlank(message = "First name is required") String firstName,
         String lastName,
         String relationship,

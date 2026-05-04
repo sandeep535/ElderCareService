@@ -30,6 +30,11 @@ public class NokService {
     }
 
     @Transactional
+    public List<NokResponse> addAll(Long patientId, List<NokRequest> requests) {
+        return requests.stream().map(r -> add(patientId, r)).toList();
+    }
+
+    @Transactional
     public NokResponse add(Long patientId, NokRequest request) {
         PatientEntity patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient", patientId));
@@ -65,6 +70,13 @@ public class NokService {
         }
         return nokRepository.findByPatientId(patientId).stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public List<NokResponse> updateAll(Long patientId, List<NokRequest> requests) {
+        return requests.stream()
+                .map(r -> r.id() != null ? update(patientId, r.id(), r) : add(patientId, r))
                 .toList();
     }
 

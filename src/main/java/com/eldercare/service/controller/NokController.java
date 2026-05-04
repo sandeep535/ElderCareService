@@ -22,9 +22,9 @@ public class NokController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
-    public ResponseEntity<NokResponse> add(@PathVariable Long patientId,
-                                           @Valid @RequestBody NokRequest request) {
-        return ResponseEntity.ok(nokService.add(patientId, request));
+    public ResponseEntity<List<NokResponse>> add(@PathVariable Long patientId,
+                                                 @Valid @RequestBody List<NokRequest> requests) {
+        return ResponseEntity.ok(nokService.addAll(patientId, requests));
     }
 
     @GetMapping
@@ -32,11 +32,10 @@ public class NokController {
         return ResponseEntity.ok(nokService.getByPatient(patientId));
     }
 
-    @PutMapping("/{nokId}")
+    @PutMapping
     @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
-    public ResponseEntity<NokResponse> update(@PathVariable Long patientId,
-                                              @PathVariable Long nokId,
-                                              @Valid @RequestBody NokRequest request) {
-        return ResponseEntity.ok(nokService.update(patientId, nokId, request));
+    public ResponseEntity<List<NokResponse>> update(@PathVariable Long patientId,
+                                                    @Valid @RequestBody List<NokRequest> requests) {
+        return ResponseEntity.ok(nokService.updateAll(patientId, requests));
     }
 }
