@@ -75,6 +75,24 @@ public class NotesService {
         return response;
     }
 
+    @Transactional
+    public NotesResponse update(Long patientId, Long noteId, NotesRequest request) {
+        NotesEntity note = notesRepository.findById(noteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Note", noteId));
+
+        if (!note.getPatient().getId().equals(patientId)) {
+            throw new ResourceNotFoundException("Note", noteId);
+        }
+
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        note.setNotes(request.notes());
+        note.setUpdatedBy(currentUser);
+        notesRepository.save(note);
+
+        log.info("Note {} updated for patient {} by {}", noteId, patientId, currentUser);
+        return toResponse(note);
+    }
+
     public List<NotesResponse> getByPatient(Long patientId) {
         if (!patientRepository.existsById(patientId)) {
             throw new ResourceNotFoundException("Patient", patientId);

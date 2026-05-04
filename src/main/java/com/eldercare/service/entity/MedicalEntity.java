@@ -14,11 +14,13 @@ public class MedicalEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "primary_physician", length = 150)
-    private String primaryPhysician;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_physician_id")
+    private UserEntity primaryPhysician;
 
-    @Column(name = "nurse", length = 150)
-    private String nurse;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nurse_id")
+    private UserEntity nurse;
 
     @Column(name = "allergies", columnDefinition = "TEXT")
     private String allergies;
@@ -29,7 +31,7 @@ public class MedicalEntity extends BaseEntity {
     @Column(name = "current_medication", columnDefinition = "TEXT")
     private String currentMedication;
 
-    @Column(name = "blood_type", length = 10)
+    @Column(name = "blood_type", length = 20)
     private String bloodType;
 
     @OneToOne(fetch = FetchType.LAZY)

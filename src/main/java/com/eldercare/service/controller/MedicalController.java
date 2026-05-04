@@ -24,6 +24,13 @@ public class MedicalController {
         return ResponseEntity.ok(medicalService.save(patientId, request));
     }
 
+    @PutMapping
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
+    public ResponseEntity<MedicalResponse> update(@PathVariable Long patientId,
+                                                  @RequestBody MedicalRequest request) {
+        return ResponseEntity.ok(medicalService.save(patientId, request));
+    }
+
     @GetMapping
     public ResponseEntity<MedicalResponse> get(@PathVariable Long patientId) {
         return ResponseEntity.ok(medicalService.getByPatient(patientId));

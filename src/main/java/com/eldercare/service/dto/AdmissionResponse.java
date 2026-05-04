@@ -8,6 +8,7 @@ public record AdmissionResponse(
         String roomNumber,
         String bed,
         String status,
+        String statusDisplay,
         String emrContactName,
         String phoneNumber,
         Long patientId

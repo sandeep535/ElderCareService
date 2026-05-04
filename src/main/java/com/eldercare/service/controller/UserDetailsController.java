@@ -21,7 +21,7 @@ public class UserDetailsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'NURSE', 'DOCTOR')")
     public ResponseEntity<List<UserDetailsResponse>> getAll() {
         return ResponseEntity.ok(userDetailsService.getAll());
     }
@@ -32,7 +32,7 @@ public class UserDetailsController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'NURSE', 'DOCTOR')")
     public ResponseEntity<UserDetailsResponse> getById(@PathVariable Long userId) {
         return ResponseEntity.ok(userDetailsService.getByUserId(userId));
     }

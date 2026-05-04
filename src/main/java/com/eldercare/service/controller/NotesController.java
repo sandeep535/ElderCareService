@@ -5,6 +5,7 @@ import com.eldercare.service.dto.NotesResponse;
 import com.eldercare.service.service.NotesService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,9 +21,18 @@ public class NotesController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<NotesResponse> add(@PathVariable Long patientId,
                                              @Valid @RequestBody NotesRequest request) {
         return ResponseEntity.ok(notesService.add(patientId, request));
+    }
+
+    @PutMapping("/{noteId}")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
+    public ResponseEntity<NotesResponse> update(@PathVariable Long patientId,
+                                                @PathVariable Long noteId,
+                                                @Valid @RequestBody NotesRequest request) {
+        return ResponseEntity.ok(notesService.update(patientId, noteId, request));
     }
 
     @GetMapping
