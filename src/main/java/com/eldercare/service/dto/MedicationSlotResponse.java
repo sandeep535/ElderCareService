@@ -11,7 +11,6 @@ public record MedicationSlotResponse(
         LocalDateTime scheduledTime,
         String status,
         LocalDateTime givenAt,
-        Long givenBy,
-        String givenByUsername,
+        UserInfoResponse givenBy,
         String notes
 ) {}

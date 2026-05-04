@@ -8,5 +8,5 @@ public record AuditLogResponse(
         String typeScreen,
         String dataJson,
         Long patientId,
-        String actionBy
+        UserInfoResponse actionBy
 ) {}

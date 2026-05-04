@@ -4,7 +4,7 @@ public record DiagnosisResponse(
         Long id,
         Long patientId,
         String diagnosisName,
-        String diagnosisBy,
+        UserInfoResponse diagnosisBy,
         String status,
         Long diagnosisMasterId,
         String diagnosisMasterName

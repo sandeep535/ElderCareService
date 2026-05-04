@@ -2,11 +2,15 @@ package com.eldercare.service.service;
 
 import com.eldercare.service.dto.AuditFailureResponse;
 import com.eldercare.service.dto.AuditLogResponse;
+import com.eldercare.service.dto.UserInfoResponse;
 import com.eldercare.service.entity.AuditFailureEntity;
 import com.eldercare.service.entity.AuditLogEntity;
+import com.eldercare.service.entity.UserEntity;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.AuditFailureRepository;
 import com.eldercare.service.repository.AuditLogRepository;
+import com.eldercare.service.repository.UserDetailsRepository;
+import com.eldercare.service.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +21,17 @@ public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
     private final AuditFailureRepository auditFailureRepository;
+    private final UserRepository userRepository;
+    private final UserDetailsRepository userDetailsRepository;
 
     public AuditLogService(AuditLogRepository auditLogRepository,
-                           AuditFailureRepository auditFailureRepository) {
+                           AuditFailureRepository auditFailureRepository,
+                           UserRepository userRepository,
+                           UserDetailsRepository userDetailsRepository) {
         this.auditLogRepository = auditLogRepository;
         this.auditFailureRepository = auditFailureRepository;
+        this.userRepository = userRepository;
+        this.userDetailsRepository = userDetailsRepository;
     }
 
     public List<AuditLogResponse> getByPatient(Long patientId, String type) {
@@ -48,8 +58,24 @@ public class AuditLogService {
     }
 
     private AuditLogResponse toResponse(AuditLogEntity entity) {
+        UserEntity actionByUser = userRepository.findByUsername(entity.getActionBy()).orElse(null);
+        UserInfoResponse actionByInfo = actionByUser != null ? buildUserInfo(actionByUser) : null;
         return new AuditLogResponse(entity.getId(), entity.getCreatedOn(), entity.getTypeScreen(),
-                entity.getDataJson(), entity.getPatientId(), entity.getActionBy());
+                entity.getDataJson(), entity.getPatientId(), actionByInfo);
+    }
+
+    private UserInfoResponse buildUserInfo(UserEntity user) {
+        var userDetails = userDetailsRepository.findByUserId(user.getId()).orElse(null);
+        return new UserInfoResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getUserType(),
+                userDetails != null ? userDetails.getFirstName() : null,
+                userDetails != null ? userDetails.getLastName() : null,
+                userDetails != null ? userDetails.getEmail() : null,
+                userDetails != null ? userDetails.getPhoneNumber() : null,
+                userDetails != null ? userDetails.getDesignation() : null
+        );
     }
 
     private AuditFailureResponse toResponse(AuditFailureEntity entity) {

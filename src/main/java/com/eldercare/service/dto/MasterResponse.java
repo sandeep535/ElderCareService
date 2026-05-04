@@ -5,6 +5,5 @@ public record MasterResponse(
         String lookupValue,
         String lookupItem,
         String lookupCode,
-        String type,
-        boolean active
+        String type
 ) {}

@@ -28,4 +28,12 @@ public class AdmissionController {
     public ResponseEntity<AdmissionResponse> get(@PathVariable Long patientId) {
         return ResponseEntity.ok(admissionService.getByPatient(patientId));
     }
+
+    @PutMapping("/{admissionId}")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
+    public ResponseEntity<AdmissionResponse> update(@PathVariable Long patientId,
+                                                    @PathVariable Long admissionId,
+                                                    @RequestBody AdmissionRequest request) {
+        return ResponseEntity.ok(admissionService.update(patientId, admissionId, request));
+    }
 }

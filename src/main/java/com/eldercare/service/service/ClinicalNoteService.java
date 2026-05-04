@@ -2,12 +2,14 @@ package com.eldercare.service.service;
 
 import com.eldercare.service.dto.ClinicalNoteRequest;
 import com.eldercare.service.dto.ClinicalNoteResponse;
+import com.eldercare.service.dto.UserInfoResponse;
 import com.eldercare.service.entity.ClinicalNoteEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.UserEntity;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.ClinicalNoteRepository;
 import com.eldercare.service.repository.PatientRepository;
+import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,15 +23,18 @@ public class ClinicalNoteService {
     private final ClinicalNoteRepository clinicalNoteRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final UserDetailsRepository userDetailsRepository;
     private final AuditService auditService;
 
     public ClinicalNoteService(ClinicalNoteRepository clinicalNoteRepository,
                                PatientRepository patientRepository,
                                UserRepository userRepository,
+                               UserDetailsRepository userDetailsRepository,
                                AuditService auditService) {
         this.clinicalNoteRepository = clinicalNoteRepository;
         this.patientRepository = patientRepository;
         this.userRepository = userRepository;
+        this.userDetailsRepository = userDetailsRepository;
         this.auditService = auditService;
     }
 
@@ -75,11 +80,25 @@ public class ClinicalNoteService {
 
     private ClinicalNoteResponse toResponse(ClinicalNoteEntity entity) {
         UserEntity recorder = entity.getRecordedBy();
+        UserInfoResponse recorderInfo = recorder != null ? buildUserInfo(recorder) : null;
         return new ClinicalNoteResponse(entity.getId(), entity.getPatient().getId(), entity.getNotes(),
                 entity.getNotesType(), entity.getPriority(),
-                recorder != null ? recorder.getId() : null,
-                recorder != null ? recorder.getUsername() : null,
+                recorderInfo,
                 entity.getCreatedOn());
+    }
+
+    private UserInfoResponse buildUserInfo(UserEntity user) {
+        var userDetails = userDetailsRepository.findByUserId(user.getId()).orElse(null);
+        return new UserInfoResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getUserType(),
+                userDetails != null ? userDetails.getFirstName() : null,
+                userDetails != null ? userDetails.getLastName() : null,
+                userDetails != null ? userDetails.getEmail() : null,
+                userDetails != null ? userDetails.getPhoneNumber() : null,
+                userDetails != null ? userDetails.getDesignation() : null
+        );
     }
 
     private UserEntity resolveCurrentUser() {

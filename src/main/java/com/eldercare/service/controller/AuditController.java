@@ -20,8 +20,10 @@ public class AuditController {
     }
 
     @GetMapping("/patients/{patientId}/audit")
-    public ResponseEntity<List<AuditLogResponse>> getPatientAudit(@PathVariable Long patientId,
-                                                                  @RequestParam(required = false) String type) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AuditLogResponse>> getAuditTrail(
+            @PathVariable Long patientId,
+            @RequestParam(required = false) String type) {
         return ResponseEntity.ok(auditLogService.getByPatient(patientId, type));
     }
 
@@ -33,7 +35,7 @@ public class AuditController {
 
     @PutMapping("/audit/failures/{id}/resolve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AuditFailureResponse> resolveFailure(@PathVariable Long id) {
+    public ResponseEntity<AuditFailureResponse> resolve(@PathVariable Long id) {
         return ResponseEntity.ok(auditLogService.resolveFailure(id));
     }
 }

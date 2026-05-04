@@ -6,6 +6,9 @@ import com.eldercare.service.entity.MasterTableEntity;
 import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.MasterTableRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +17,8 @@ import java.util.List;
 @Service
 public class MasterService {
 
+    private static final Logger log = LogManager.getLogger(MasterService.class);
+
     private final MasterTableRepository masterTableRepository;
 
     public MasterService(MasterTableRepository masterTableRepository) {
@@ -21,56 +26,50 @@ public class MasterService {
     }
 
     public List<MasterResponse> getByType(String type) {
-        return masterTableRepository.findByTypeAndActiveTrueOrderByLookupValueAsc(type.toUpperCase())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return masterTableRepository.findByTypeOrderByLookupValue(type.toUpperCase())
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public MasterResponse create(MasterRequest request) {
         String type = request.type().toUpperCase();
-        String lookupCode = request.lookupCode().toUpperCase();
+        String code = request.lookupCode().toUpperCase();
 
-        if (masterTableRepository.existsByTypeAndLookupCode(type, lookupCode)) {
-            throw new ElderCareException("Lookup code already exists for type: " + lookupCode);
+        if (masterTableRepository.existsByTypeAndLookupCode(type, code)) {
+            throw new ElderCareException("Lookup code " + code + " already exists for type " + type);
         }
 
-        MasterTableEntity master = new MasterTableEntity();
-        master.setType(type);
-        master.setLookupCode(lookupCode);
-        master.setLookupItem(request.lookupItem());
-        master.setLookupValue(request.lookupValue());
-        master.setActive(request.active() == null || request.active());
-        masterTableRepository.save(master);
-        return toResponse(master);
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        MasterTableEntity entity = new MasterTableEntity();
+        entity.setType(type);
+        entity.setLookupCode(code);
+        entity.setLookupItem(request.lookupItem());
+        entity.setLookupValue(request.lookupValue());
+        entity.setActive(true);
+        entity.setCreatedBy(currentUser);
+        masterTableRepository.save(entity);
+
+        log.info("Master entry created: type={} code={} by {}", type, code, currentUser);
+        return toResponse(entity);
     }
 
     @Transactional
     public MasterResponse update(Long id, MasterRequest request) {
-        MasterTableEntity master = masterTableRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Master lookup", id));
+        MasterTableEntity entity = masterTableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Master entry", id));
 
-        String type = request.type().toUpperCase();
-        String lookupCode = request.lookupCode().toUpperCase();
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        entity.setLookupValue(request.lookupValue());
+        entity.setLookupItem(request.lookupItem());
+        entity.setUpdatedBy(currentUser);
+        masterTableRepository.save(entity);
 
-        if (!master.getType().equals(type) || !master.getLookupCode().equals(lookupCode)) {
-            if (masterTableRepository.existsByTypeAndLookupCode(type, lookupCode)) {
-                throw new ElderCareException("Lookup code already exists for type: " + lookupCode);
-            }
-        }
-
-        master.setType(type);
-        master.setLookupCode(lookupCode);
-        master.setLookupItem(request.lookupItem());
-        master.setLookupValue(request.lookupValue());
-        master.setActive(request.active() == null || request.active());
-        masterTableRepository.save(master);
-        return toResponse(master);
+        return toResponse(entity);
     }
 
-    private MasterResponse toResponse(MasterTableEntity entity) {
-        return new MasterResponse(entity.getId(), entity.getLookupValue(), entity.getLookupItem(),
-                entity.getLookupCode(), entity.getType(), entity.isActive());
+    private MasterResponse toResponse(MasterTableEntity m) {
+        return new MasterResponse(m.getId(), m.getLookupValue(),
+                m.getLookupItem(), m.getLookupCode(), m.getType());
     }
 }

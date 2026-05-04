@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface MasterTableRepository extends JpaRepository<MasterTableEntity, Long> {
 
-    List<MasterTableEntity> findByTypeAndActiveTrueOrderByLookupValueAsc(String type);
+    List<MasterTableEntity> findByTypeOrderByLookupValue(String type);
 
     Optional<MasterTableEntity> findByTypeAndLookupCode(String type, String lookupCode);
 

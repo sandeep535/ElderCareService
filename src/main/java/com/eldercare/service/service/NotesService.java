@@ -2,13 +2,17 @@ package com.eldercare.service.service;
 
 import com.eldercare.service.dto.NotesRequest;
 import com.eldercare.service.dto.NotesResponse;
+import com.eldercare.service.dto.UserInfoResponse;
 import com.eldercare.service.entity.NotesEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.PatientJourneyEntity;
+import com.eldercare.service.entity.UserEntity;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.NotesRepository;
 import com.eldercare.service.repository.PatientJourneyRepository;
 import com.eldercare.service.repository.PatientRepository;
+import com.eldercare.service.repository.UserDetailsRepository;
+import com.eldercare.service.repository.UserRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,13 +29,22 @@ public class NotesService {
     private final NotesRepository notesRepository;
     private final PatientRepository patientRepository;
     private final PatientJourneyRepository journeyRepository;
+    private final UserRepository userRepository;
+    private final UserDetailsRepository userDetailsRepository;
+    private final AuditService auditService;
 
     public NotesService(NotesRepository notesRepository,
                         PatientRepository patientRepository,
-                        PatientJourneyRepository journeyRepository) {
+                        PatientJourneyRepository journeyRepository,
+                        UserRepository userRepository,
+                        UserDetailsRepository userDetailsRepository,
+                        AuditService auditService) {
         this.notesRepository = notesRepository;
         this.patientRepository = patientRepository;
         this.journeyRepository = journeyRepository;
+        this.userRepository = userRepository;
+        this.userDetailsRepository = userDetailsRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -47,7 +60,9 @@ public class NotesService {
         note.setCreatedBy(currentUser);
         notesRepository.save(note);
 
-        // Flip journey flag on first note
+        NotesResponse response = toResponse(note);
+        auditService.record(patientId, "NOTES", response);
+
         PatientJourneyEntity journey = journeyRepository.findByPatientId(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient journey", patientId));
         if (!journey.isNote()) {
@@ -57,7 +72,7 @@ public class NotesService {
         }
 
         log.info("Note added for patient {} by {}", patientId, currentUser);
-        return toResponse(note);
+        return response;
     }
 
     public List<NotesResponse> getByPatient(Long patientId) {
@@ -69,7 +84,23 @@ public class NotesService {
     }
 
     private NotesResponse toResponse(NotesEntity n) {
+        UserEntity user = userRepository.findByUsername(n.getCreatedBy()).orElse(null);
+        UserInfoResponse userInfo = user != null ? buildUserInfo(user) : null;
         return new NotesResponse(n.getId(), n.getNotes(),
-                n.getPatient().getId(), n.getCreatedBy(), n.getCreatedOn());
+                n.getPatient().getId(), userInfo, n.getCreatedOn());
+    }
+
+    private UserInfoResponse buildUserInfo(UserEntity user) {
+        var userDetails = userDetailsRepository.findByUserId(user.getId()).orElse(null);
+        return new UserInfoResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getUserType(),
+                userDetails != null ? userDetails.getFirstName() : null,
+                userDetails != null ? userDetails.getLastName() : null,
+                userDetails != null ? userDetails.getEmail() : null,
+                userDetails != null ? userDetails.getPhoneNumber() : null,
+                userDetails != null ? userDetails.getDesignation() : null
+        );
     }
 }

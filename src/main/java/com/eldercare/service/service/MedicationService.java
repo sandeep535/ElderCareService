@@ -6,6 +6,7 @@ import com.eldercare.service.dto.MedicationSlotResponse;
 import com.eldercare.service.dto.PatientMedicationRequest;
 import com.eldercare.service.dto.PatientMedicationResponse;
 import com.eldercare.service.dto.SlotActionRequest;
+import com.eldercare.service.dto.UserInfoResponse;
 import com.eldercare.service.entity.MasterTableEntity;
 import com.eldercare.service.entity.MedicationMasterEntity;
 import com.eldercare.service.entity.MedicationSlotEntity;
@@ -19,6 +20,7 @@ import com.eldercare.service.repository.MedicationMasterRepository;
 import com.eldercare.service.repository.MedicationSlotRepository;
 import com.eldercare.service.repository.PatientMedicationRepository;
 import com.eldercare.service.repository.PatientRepository;
+import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,6 +44,7 @@ public class MedicationService {
     private final MedicationSlotRepository medicationSlotRepository;
     private final MasterTableRepository masterTableRepository;
     private final UserRepository userRepository;
+    private final UserDetailsRepository userDetailsRepository;
     private final AuditService auditService;
 
     public MedicationService(MedicationMasterRepository medicationMasterRepository,
@@ -50,6 +53,7 @@ public class MedicationService {
                              MedicationSlotRepository medicationSlotRepository,
                              MasterTableRepository masterTableRepository,
                              UserRepository userRepository,
+                             UserDetailsRepository userDetailsRepository,
                              AuditService auditService) {
         this.medicationMasterRepository = medicationMasterRepository;
         this.patientRepository = patientRepository;
@@ -57,6 +61,7 @@ public class MedicationService {
         this.medicationSlotRepository = medicationSlotRepository;
         this.masterTableRepository = masterTableRepository;
         this.userRepository = userRepository;
+        this.userDetailsRepository = userDetailsRepository;
         this.auditService = auditService;
     }
 
@@ -266,10 +271,24 @@ public class MedicationService {
 
     private MedicationSlotResponse toSlotResponse(MedicationSlotEntity entity) {
         UserEntity givenBy = entity.getGivenBy();
+        UserInfoResponse givenByInfo = givenBy != null ? buildUserInfo(givenBy) : null;
         return new MedicationSlotResponse(entity.getId(), entity.getPatientMedication().getId(),
                 entity.getPatient().getId(), entity.getPatientMedication().getMedication().getName(),
                 entity.getPatientMedication().getDose(), entity.getScheduledTime(), entity.getStatus(),
-                entity.getGivenAt(), givenBy != null ? givenBy.getId() : null,
-                givenBy != null ? givenBy.getUsername() : null, entity.getNotes());
+                entity.getGivenAt(), givenByInfo, entity.getNotes());
+    }
+
+    private UserInfoResponse buildUserInfo(UserEntity user) {
+        var userDetails = userDetailsRepository.findByUserId(user.getId()).orElse(null);
+        return new UserInfoResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getUserType(),
+                userDetails != null ? userDetails.getFirstName() : null,
+                userDetails != null ? userDetails.getLastName() : null,
+                userDetails != null ? userDetails.getEmail() : null,
+                userDetails != null ? userDetails.getPhoneNumber() : null,
+                userDetails != null ? userDetails.getDesignation() : null
+        );
     }
 }

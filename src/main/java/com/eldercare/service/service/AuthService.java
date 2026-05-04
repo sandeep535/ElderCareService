@@ -5,10 +5,12 @@ import com.eldercare.service.dto.LoginResponse;
 import com.eldercare.service.dto.SignupRequest;
 import com.eldercare.service.entity.InvalidatedTokenEntity;
 import com.eldercare.service.entity.RoleAccessEntity;
+import com.eldercare.service.entity.UserDetailsEntity;
 import com.eldercare.service.entity.UserEntity;
 import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.repository.InvalidatedTokenRepository;
 import com.eldercare.service.repository.RoleRepository;
+import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
 import com.eldercare.service.repository.RoleAccessRepository;
 import com.eldercare.service.utils.JwtUtil;
@@ -37,6 +39,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RoleAccessRepository roleAccessRepository;
+    private final UserDetailsRepository userDetailsRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${jwt.expiration.ms}")
@@ -49,6 +52,7 @@ public class AuthService {
                        UserRepository userRepository,
                        RoleRepository roleRepository,
                        RoleAccessRepository roleAccessRepository,
+                       UserDetailsRepository userDetailsRepository,
                        PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
@@ -57,6 +61,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.roleAccessRepository = roleAccessRepository;
+        this.userDetailsRepository = userDetailsRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -78,6 +83,19 @@ public class AuthService {
         user.setUserType(request.userType());
         user.setCreatedBy("signup");
         userRepository.save(user);
+
+        UserDetailsEntity details = new UserDetailsEntity();
+        details.setUser(user);
+        details.setFirstName(request.firstName());
+        details.setLastName(request.lastName());
+        details.setGender(request.gender());
+        details.setDob(request.dob());
+        details.setDesignation(request.designation());
+        details.setEmail(request.email());
+        details.setPhoneNumber(request.phoneNumber());
+        details.setQualification(request.qualification());
+        details.setCreatedBy("signup");
+        userDetailsRepository.save(details);
 
         RoleAccessEntity roleAccess = new RoleAccessEntity();
         roleAccess.setUser(user);

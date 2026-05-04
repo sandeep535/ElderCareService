@@ -8,22 +8,22 @@ import lombok.Setter;
 @Table(name = "master_table")
 @Getter
 @Setter
-public class MasterTableEntity {
+public class MasterTableEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "lookup_value", length = 50, nullable = false)
+    @Column(name = "lookup_value", length = 10)
     private String lookupValue;
 
-    @Column(name = "lookup_item", length = 150, nullable = false)
+    @Column(name = "lookup_item", nullable = false, length = 100)
     private String lookupItem;
 
-    @Column(name = "lookup_code", length = 100, nullable = false)
+    @Column(name = "lookup_code", nullable = false, length = 50)
     private String lookupCode;
 
-    @Column(name = "type", length = 100, nullable = false)
+    @Column(name = "type", nullable = false, length = 50)
     private String type;
 
     @Column(name = "active", nullable = false)

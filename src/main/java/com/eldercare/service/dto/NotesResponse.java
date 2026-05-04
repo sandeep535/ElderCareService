@@ -6,6 +6,6 @@ public record NotesResponse(
         Long id,
         String notes,
         Long patientId,
-        String createdBy,
+        UserInfoResponse createdBy,
         LocalDateTime createdOn
 ) {}

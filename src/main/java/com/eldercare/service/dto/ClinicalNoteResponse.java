@@ -8,7 +8,6 @@ public record ClinicalNoteResponse(
         String notes,
         String notesType,
         String priority,
-        Long recordedBy,
-        String recordedByUsername,
+        UserInfoResponse recordedBy,
         LocalDateTime createdOn
 ) {}
