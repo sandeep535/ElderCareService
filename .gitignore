@@ -1,0 +1,62 @@
+# Maven build output
+target/
+/target/
+*.jar
+*.war
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+bin/
+*.class
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# IDE - NetBeans
+nbproject/
+nb-configuration.xml
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+log*.txt
+
+# Local development
+.env
+.env.local
+application-local.properties
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+maven-wrapper.properties
+
+# Node (if using any frontend tools)
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Keep important files
+!pom.xml
+!mvnw
+!mvnw.cmd
+!docs/**
+!src/**
+!*.md
