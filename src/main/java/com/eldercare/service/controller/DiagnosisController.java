@@ -21,7 +21,7 @@ public class DiagnosisController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<DiagnosisResponse> add(@PathVariable Long patientId,
                                                  @Valid @RequestBody DiagnosisRequest request) {
         return ResponseEntity.ok(diagnosisService.add(patientId, request));
@@ -33,7 +33,7 @@ public class DiagnosisController {
     }
 
     @PutMapping("/{diagnosisId}")
-    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<DiagnosisResponse> update(@PathVariable Long patientId,
                                                     @PathVariable Long diagnosisId,
                                                     @Valid @RequestBody DiagnosisRequest request) {

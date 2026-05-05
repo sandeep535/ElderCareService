@@ -29,6 +29,35 @@ INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) 
 ('3', 'Critical',    'CRITICAL',    'PATIENT_STATUS', true),
 ('4', 'Observation', 'OBSERVATION', 'PATIENT_STATUS', true);
 
+DELETE FROM master_table WHERE type = 'DIAGNOSIS_STATUS';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'Active',     'ACTIVE',     'DIAGNOSIS_STATUS', true),
+('2', 'Resolved',   'RESOLVED',   'DIAGNOSIS_STATUS', true),
+('3', 'Chronic',    'CHRONIC',    'DIAGNOSIS_STATUS', true),
+('4', 'Monitoring', 'MONITORING', 'DIAGNOSIS_STATUS', true);
+
+DELETE FROM master_table WHERE type = 'NOTES_TYPE';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'Progress Note',    'PROGRESS',    'NOTES_TYPE', true),
+('2', 'Assessment',       'ASSESSMENT',  'NOTES_TYPE', true),
+('3', 'Observation',      'OBSERVATION', 'NOTES_TYPE', true),
+('4', 'Incident Report',  'INCIDENT',    'NOTES_TYPE', true),
+('5', 'Care Plan Update', 'CARE-PLAN',   'NOTES_TYPE', true);
+
+DELETE FROM master_table WHERE type = 'CLINICAL_NOTE_PRIORITY';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'High',   'HIGH',   'CLINICAL_NOTE_PRIORITY', true),
+('2', 'Medium', 'MEDIUM', 'CLINICAL_NOTE_PRIORITY', true),
+('3', 'Low',    'LOW',    'CLINICAL_NOTE_PRIORITY', true);
+
+DELETE FROM master_table WHERE type = 'SURGERY_TYPE';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'Elective',  'ELECTIVE',  'SURGERY_TYPE', true),
+('2', 'Emergency', 'EMERGENCY', 'SURGERY_TYPE', true),
+('3', 'Urgent',    'URGENT',    'SURGERY_TYPE', true),
+('4', 'Minor',     'MINOR',     'SURGERY_TYPE', true),
+('5', 'Major',     'MAJOR',     'SURGERY_TYPE', true);
+
 -- ============================================================
 -- USER SEED DATA: 5 Nurses + 5 Doctors
 -- Password for all: Nurse@123 / Doctor@123

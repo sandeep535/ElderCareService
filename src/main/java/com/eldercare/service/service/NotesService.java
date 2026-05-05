@@ -7,7 +7,10 @@ import com.eldercare.service.entity.NotesEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.PatientJourneyEntity;
 import com.eldercare.service.entity.UserEntity;
+import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.exception.ResourceNotFoundException;
+import com.eldercare.service.repository.MasterTableRepository;
+import com.eldercare.service.repository.MasterTableRepository;
 import com.eldercare.service.repository.NotesRepository;
 import com.eldercare.service.repository.PatientJourneyRepository;
 import com.eldercare.service.repository.PatientRepository;
@@ -31,6 +34,7 @@ public class NotesService {
     private final PatientJourneyRepository journeyRepository;
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
+    private final MasterTableRepository masterTableRepository;
     private final AuditService auditService;
 
     public NotesService(NotesRepository notesRepository,
@@ -38,12 +42,14 @@ public class NotesService {
                         PatientJourneyRepository journeyRepository,
                         UserRepository userRepository,
                         UserDetailsRepository userDetailsRepository,
+                        MasterTableRepository masterTableRepository,
                         AuditService auditService) {
         this.notesRepository = notesRepository;
         this.patientRepository = patientRepository;
         this.journeyRepository = journeyRepository;
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
+        this.masterTableRepository = masterTableRepository;
         this.auditService = auditService;
     }
 
@@ -104,7 +110,16 @@ public class NotesService {
     private NotesResponse toResponse(NotesEntity n) {
         UserEntity user = userRepository.findByUsername(n.getCreatedBy()).orElse(null);
         UserInfoResponse userInfo = user != null ? buildUserInfo(user) : null;
-        return new NotesResponse(n.getId(), n.getNotes(),
+
+        String noteTypeDisplay = null;
+        if (n.getNoteType() != null) {
+            noteTypeDisplay = masterTableRepository
+                    .findByTypeAndLookupCode("NOTES_TYPE", n.getNoteType())
+                    .map(m -> m.getLookupItem())
+                    .orElse(n.getNoteType());
+        }
+
+        return new NotesResponse(n.getId(), n.getNotes(), n.getNoteType(), noteTypeDisplay,
                 n.getPatient().getId(), userInfo, n.getCreatedOn());
     }
 

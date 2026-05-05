@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "diagnoses")
 @Getter
@@ -19,6 +21,12 @@ public class DiagnosisEntity extends BaseEntity {
 
     @Column(name = "diagnosis_by", length = 150)
     private String diagnosisBy;
+
+    @Column(name = "diagnosis_date")
+    private LocalDate diagnosisDate;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "status", length = 50, nullable = false)
     private String status;

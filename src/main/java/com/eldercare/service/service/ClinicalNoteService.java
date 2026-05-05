@@ -4,10 +4,13 @@ import com.eldercare.service.dto.ClinicalNoteRequest;
 import com.eldercare.service.dto.ClinicalNoteResponse;
 import com.eldercare.service.dto.UserInfoResponse;
 import com.eldercare.service.entity.ClinicalNoteEntity;
+import com.eldercare.service.entity.MasterTableEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.UserEntity;
+import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.ClinicalNoteRepository;
+import com.eldercare.service.repository.MasterTableRepository;
 import com.eldercare.service.repository.PatientRepository;
 import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
@@ -24,17 +27,20 @@ public class ClinicalNoteService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
+    private final MasterTableRepository masterTableRepository;
     private final AuditService auditService;
 
     public ClinicalNoteService(ClinicalNoteRepository clinicalNoteRepository,
                                PatientRepository patientRepository,
                                UserRepository userRepository,
                                UserDetailsRepository userDetailsRepository,
+                               MasterTableRepository masterTableRepository,
                                AuditService auditService) {
         this.clinicalNoteRepository = clinicalNoteRepository;
         this.patientRepository = patientRepository;
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
+        this.masterTableRepository = masterTableRepository;
         this.auditService = auditService;
     }
 
@@ -43,13 +49,27 @@ public class ClinicalNoteService {
         PatientEntity patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient", patientId));
 
+        MasterTableEntity notesType = masterTableRepository.findById(request.notesTypeId())
+                .orElseThrow(() -> new ElderCareException("Invalid notes type id: " + request.notesTypeId()));
+        MasterTableEntity priority = masterTableRepository.findById(request.priorityId())
+                .orElseThrow(() -> new ElderCareException("Invalid priority id: " + request.priorityId()));
+
+        UserEntity recordedBy = request.recordedById() != null
+                ? userRepository.findById(request.recordedById())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", request.recordedById()))
+                : resolveCurrentUser();
+
+        String currentUser = resolveCurrentUserName();
+
         ClinicalNoteEntity note = new ClinicalNoteEntity();
         note.setPatient(patient);
+        note.setNoteTitle(request.noteTitle());
+        note.setNoteDate(request.noteDate() != null ? request.noteDate() : java.time.LocalDateTime.now());
         note.setNotes(request.notes());
-        note.setNotesType(request.notesType());
-        note.setPriority(request.priority());
-        note.setRecordedBy(resolveCurrentUser());
-        note.setCreatedBy(resolveCurrentUserName());
+        note.setNotesType(notesType.getLookupCode());
+        note.setPriority(priority.getLookupCode());
+        note.setRecordedBy(recordedBy);
+        note.setCreatedBy(currentUser);
         clinicalNoteRepository.save(note);
 
         ClinicalNoteResponse response = toResponse(note);
@@ -67,12 +87,27 @@ public class ClinicalNoteService {
     public ClinicalNoteResponse update(Long patientId, Long noteId, ClinicalNoteRequest request) {
         ClinicalNoteEntity note = clinicalNoteRepository.findById(noteId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinical note", noteId));
+
         if (!note.getPatient().getId().equals(patientId)) {
             throw new ResourceNotFoundException("Clinical note", noteId);
         }
+
+        MasterTableEntity notesType = masterTableRepository.findById(request.notesTypeId())
+                .orElseThrow(() -> new ElderCareException("Invalid notes type id: " + request.notesTypeId()));
+        MasterTableEntity priority = masterTableRepository.findById(request.priorityId())
+                .orElseThrow(() -> new ElderCareException("Invalid priority id: " + request.priorityId()));
+
+        UserEntity recordedBy = request.recordedById() != null
+                ? userRepository.findById(request.recordedById())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", request.recordedById()))
+                : note.getRecordedBy();
+
+        note.setNoteTitle(request.noteTitle());
+        note.setNoteDate(request.noteDate() != null ? request.noteDate() : note.getNoteDate());
         note.setNotes(request.notes());
-        note.setNotesType(request.notesType());
-        note.setPriority(request.priority());
+        note.setNotesType(notesType.getLookupCode());
+        note.setPriority(priority.getLookupCode());
+        note.setRecordedBy(recordedBy);
         note.setUpdatedBy(resolveCurrentUserName());
         clinicalNoteRepository.save(note);
         return toResponse(note);
@@ -81,10 +116,21 @@ public class ClinicalNoteService {
     private ClinicalNoteResponse toResponse(ClinicalNoteEntity entity) {
         UserEntity recorder = entity.getRecordedBy();
         UserInfoResponse recorderInfo = recorder != null ? buildUserInfo(recorder) : null;
-        return new ClinicalNoteResponse(entity.getId(), entity.getPatient().getId(), entity.getNotes(),
-                entity.getNotesType(), entity.getPriority(),
-                recorderInfo,
-                entity.getCreatedOn());
+
+        String notesTypeDisplay = masterTableRepository
+                .findByTypeAndLookupCode("NOTES_TYPE", entity.getNotesType())
+                .map(m -> m.getLookupItem()).orElse(entity.getNotesType());
+
+        String priorityDisplay = masterTableRepository
+                .findByTypeAndLookupCode("CLINICAL_NOTE_PRIORITY", entity.getPriority())
+                .map(m -> m.getLookupItem()).orElse(entity.getPriority());
+
+        return new ClinicalNoteResponse(entity.getId(), entity.getPatient().getId(),
+                entity.getNoteTitle(), entity.getNoteDate(),
+                entity.getNotes(),
+                entity.getNotesType(), notesTypeDisplay,
+                entity.getPriority(), priorityDisplay,
+                recorderInfo, entity.getCreatedOn());
     }
 
     private UserInfoResponse buildUserInfo(UserEntity user) {
@@ -106,10 +152,6 @@ public class ClinicalNoteService {
     }
 
     private String resolveCurrentUserName() {
-        try {
-            return SecurityContextHolder.getContext().getAuthentication().getName();
-        } catch (Exception e) {
-            return "system";
-        }
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }

@@ -1,10 +1,15 @@
 package com.eldercare.service.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
 
 public record MedicalHistoryRequest(
-        @NotBlank(message = "Type is required") String type,
+        @NotBlank(message = "Surgery name is required") String surgeryName,
+        LocalDate surgeryDate,
+        Long surgeryTypeId,
+        String surgeon,
+        String hospital,
         String procedureCode,
-        @NotBlank(message = "Description is required") String description
+        String notes
 ) {}

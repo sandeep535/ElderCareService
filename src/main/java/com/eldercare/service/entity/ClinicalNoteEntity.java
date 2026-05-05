@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "clinical_note")
 @Getter
@@ -13,6 +15,12 @@ public class ClinicalNoteEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "note_title", length = 200)
+    private String noteTitle;
+
+    @Column(name = "note_date")
+    private LocalDateTime noteDate;
 
     @Column(name = "notes", columnDefinition = "TEXT", nullable = false)
     private String notes;

@@ -11,9 +11,12 @@ import com.eldercare.service.repository.AuditFailureRepository;
 import com.eldercare.service.repository.AuditLogRepository;
 import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,6 +43,20 @@ public class AuditLogService {
                         .stream().map(this::toResponse).toList()
                 : auditLogRepository.findByPatientIdAndTypeScreenOrderByCreatedOnDesc(patientId, type)
                         .stream().map(this::toResponse).toList();
+    }
+
+    public List<AuditLogResponse> getLastN(Long patientId, int count) {
+        return auditLogRepository.findByPatientIdOrderByCreatedOnDesc(
+                        patientId, PageRequest.of(0, count))
+                .stream().map(this::toResponse).toList();
+    }
+
+    public List<AuditLogResponse> getByDateRange(Long patientId, LocalDate from, LocalDate to) {
+        LocalDateTime fromDt = from.atStartOfDay();
+        LocalDateTime toDt = to.atTime(23, 59, 59);
+        return auditLogRepository.findByPatientIdAndCreatedOnBetweenOrderByCreatedOnDesc(
+                        patientId, fromDt, toDt)
+                .stream().map(this::toResponse).toList();
     }
 
     public List<AuditFailureResponse> getPendingFailures() {

@@ -1,11 +1,14 @@
 package com.eldercare.service.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
 
 public record DiagnosisRequest(
         @NotBlank(message = "Diagnosis name is required") String diagnosisName,
-        String diagnosisBy,
         @NotBlank(message = "Status is required") String status,
-        Long diagnosisMasterId
+        LocalDate diagnosisDate,
+        String notes,
+        Long diagnosisMasterId,
+        Long diagnosisByUserId
 ) {}

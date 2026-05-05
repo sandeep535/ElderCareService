@@ -33,6 +33,7 @@ public class DiagnosisMasterService {
     public DiagnosisMasterResponse create(DiagnosisMasterRequest request) {
         DiagnosisMasterEntity entity = new DiagnosisMasterEntity();
         entity.setDiagnosisName(request.diagnosisName());
+        entity.setIcdCode(request.icdCode());
         entity.setActive(request.active() == null || request.active());
         diagnosisMasterRepository.save(entity);
         return toResponse(entity);
@@ -43,12 +44,13 @@ public class DiagnosisMasterService {
         DiagnosisMasterEntity entity = diagnosisMasterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Diagnosis master", id));
         entity.setDiagnosisName(request.diagnosisName());
+        entity.setIcdCode(request.icdCode());
         entity.setActive(request.active() == null || request.active());
         diagnosisMasterRepository.save(entity);
         return toResponse(entity);
     }
 
     private DiagnosisMasterResponse toResponse(DiagnosisMasterEntity entity) {
-        return new DiagnosisMasterResponse(entity.getId(), entity.getDiagnosisName(), entity.isActive());
+        return new DiagnosisMasterResponse(entity.getId(), entity.getDiagnosisName(), entity.getIcdCode(), entity.isActive());
     }
 }

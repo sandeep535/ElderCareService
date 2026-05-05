@@ -17,6 +17,9 @@ public class NotesEntity extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT", nullable = false)
     private String notes;
 
+    @Column(name = "note_type", length = 50)
+    private String noteType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable = false)
     private PatientEntity patient;

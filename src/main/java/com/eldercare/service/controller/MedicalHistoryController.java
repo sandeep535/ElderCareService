@@ -21,7 +21,7 @@ public class MedicalHistoryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<MedicalHistoryResponse> add(@PathVariable Long patientId,
                                                       @Valid @RequestBody MedicalHistoryRequest request) {
         return ResponseEntity.ok(medicalHistoryService.add(patientId, request));
@@ -33,7 +33,7 @@ public class MedicalHistoryController {
     }
 
     @PutMapping("/{historyId}")
-    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<MedicalHistoryResponse> update(@PathVariable Long patientId,
                                                           @PathVariable Long historyId,
                                                           @Valid @RequestBody MedicalHistoryRequest request) {

@@ -7,12 +7,15 @@ import com.eldercare.service.entity.DiagnosisEntity;
 import com.eldercare.service.entity.DiagnosisMasterEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.UserEntity;
+import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.exception.ResourceNotFoundException;
 import com.eldercare.service.repository.DiagnosisMasterRepository;
 import com.eldercare.service.repository.DiagnosisRepository;
+import com.eldercare.service.repository.MasterTableRepository;
 import com.eldercare.service.repository.PatientRepository;
 import com.eldercare.service.repository.UserDetailsRepository;
 import com.eldercare.service.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,7 @@ public class DiagnosisService {
     private final DiagnosisRepository diagnosisRepository;
     private final PatientRepository patientRepository;
     private final DiagnosisMasterRepository diagnosisMasterRepository;
+    private final MasterTableRepository masterTableRepository;
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
     private final AuditService auditService;
@@ -31,12 +35,14 @@ public class DiagnosisService {
     public DiagnosisService(DiagnosisRepository diagnosisRepository,
                             PatientRepository patientRepository,
                             DiagnosisMasterRepository diagnosisMasterRepository,
+                            MasterTableRepository masterTableRepository,
                             UserRepository userRepository,
                             UserDetailsRepository userDetailsRepository,
                             AuditService auditService) {
         this.diagnosisRepository = diagnosisRepository;
         this.patientRepository = patientRepository;
         this.diagnosisMasterRepository = diagnosisMasterRepository;
+        this.masterTableRepository = masterTableRepository;
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.auditService = auditService;
@@ -47,17 +53,26 @@ public class DiagnosisService {
         PatientEntity patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient", patientId));
 
+        validateStatus(request.status());
+
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String diagnosisBy = currentUser;
+        if (request.diagnosisByUserId() != null) {
+            UserEntity diagnosisByUser = userRepository.findById(request.diagnosisByUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", request.diagnosisByUserId()));
+            diagnosisBy = diagnosisByUser.getUsername();
+        }
+
         DiagnosisEntity entity = new DiagnosisEntity();
         entity.setPatient(patient);
         entity.setDiagnosisName(request.diagnosisName());
-        entity.setDiagnosisBy(request.diagnosisBy());
-        entity.setStatus(request.status());
-        if (request.diagnosisMasterId() != null) {
-            DiagnosisMasterEntity master = diagnosisMasterRepository.findById(request.diagnosisMasterId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Diagnosis master", request.diagnosisMasterId()));
-            entity.setDiagnosisMaster(master);
-        }
-        entity.setCreatedBy("system");
+        entity.setDiagnosisBy(diagnosisBy);
+        entity.setDiagnosisDate(request.diagnosisDate());
+        entity.setNotes(request.notes());
+        entity.setStatus(request.status().toUpperCase());
+        entity.setDiagnosisMaster(resolveMaster(request.diagnosisMasterId()));
+        entity.setCreatedBy(currentUser);
         diagnosisRepository.save(entity);
 
         DiagnosisResponse response = toResponse(entity);
@@ -75,31 +90,72 @@ public class DiagnosisService {
     public DiagnosisResponse update(Long patientId, Long diagnosisId, DiagnosisRequest request) {
         DiagnosisEntity entity = diagnosisRepository.findById(diagnosisId)
                 .orElseThrow(() -> new ResourceNotFoundException("Diagnosis", diagnosisId));
+
         if (!entity.getPatient().getId().equals(patientId)) {
             throw new ResourceNotFoundException("Diagnosis", diagnosisId);
         }
-        entity.setDiagnosisName(request.diagnosisName());
-        entity.setDiagnosisBy(request.diagnosisBy());
-        entity.setStatus(request.status());
-        if (request.diagnosisMasterId() != null) {
-            DiagnosisMasterEntity master = diagnosisMasterRepository.findById(request.diagnosisMasterId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Diagnosis master", request.diagnosisMasterId()));
-            entity.setDiagnosisMaster(master);
-        } else {
-            entity.setDiagnosisMaster(null);
+
+        validateStatus(request.status());
+
+        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String diagnosisBy = currentUser;
+        if (request.diagnosisByUserId() != null) {
+            UserEntity diagnosisByUser = userRepository.findById(request.diagnosisByUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", request.diagnosisByUserId()));
+            diagnosisBy = diagnosisByUser.getUsername();
         }
-        entity.setUpdatedBy("system");
+
+        entity.setDiagnosisName(request.diagnosisName());
+        entity.setDiagnosisBy(diagnosisBy);
+        entity.setDiagnosisDate(request.diagnosisDate());
+        entity.setNotes(request.notes());
+        entity.setStatus(request.status().toUpperCase());
+        entity.setDiagnosisMaster(resolveMaster(request.diagnosisMasterId()));
+        entity.setUpdatedBy(currentUser);
         diagnosisRepository.save(entity);
         return toResponse(entity);
+    }
+
+    private void validateStatus(String status) {
+        if (status != null) {
+            masterTableRepository.findByTypeAndLookupCode("DIAGNOSIS_STATUS", status.toUpperCase())
+                    .orElseThrow(() -> new ElderCareException("Invalid diagnosis status: " + status));
+        }
+    }
+
+    private DiagnosisMasterEntity resolveMaster(Long masterId) {
+        if (masterId == null) return null;
+        return diagnosisMasterRepository.findById(masterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Diagnosis master", masterId));
     }
 
     private DiagnosisResponse toResponse(DiagnosisEntity entity) {
         UserEntity diagnosisByUser = userRepository.findByUsername(entity.getDiagnosisBy()).orElse(null);
         UserInfoResponse diagnosisByInfo = diagnosisByUser != null ? buildUserInfo(diagnosisByUser) : null;
-        return new DiagnosisResponse(entity.getId(), entity.getPatient().getId(), entity.getDiagnosisName(),
-                diagnosisByInfo, entity.getStatus(),
-                entity.getDiagnosisMaster() != null ? entity.getDiagnosisMaster().getId() : null,
-                entity.getDiagnosisMaster() != null ? entity.getDiagnosisMaster().getDiagnosisName() : null);
+
+        String statusDisplay = null;
+        if (entity.getStatus() != null) {
+            statusDisplay = masterTableRepository
+                    .findByTypeAndLookupCode("DIAGNOSIS_STATUS", entity.getStatus())
+                    .map(m -> m.getLookupItem())
+                    .orElse(entity.getStatus());
+        }
+
+        DiagnosisMasterEntity master = entity.getDiagnosisMaster();
+        return new DiagnosisResponse(
+                entity.getId(),
+                entity.getPatient().getId(),
+                entity.getDiagnosisName(),
+                diagnosisByInfo,
+                entity.getDiagnosisDate(),
+                entity.getNotes(),
+                entity.getStatus(),
+                statusDisplay,
+                master != null ? master.getId() : null,
+                master != null ? master.getDiagnosisName() : null,
+                master != null ? master.getIcdCode() : null
+        );
     }
 
     private UserInfoResponse buildUserInfo(UserEntity user) {

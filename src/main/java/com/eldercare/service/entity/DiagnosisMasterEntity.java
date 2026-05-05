@@ -17,6 +17,9 @@ public class DiagnosisMasterEntity {
     @Column(name = "diagnosis_name", length = 200, nullable = false)
     private String diagnosisName;
 
+    @Column(name = "icd_code", length = 20)
+    private String icdCode;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 }

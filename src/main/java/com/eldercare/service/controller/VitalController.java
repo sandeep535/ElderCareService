@@ -30,4 +30,9 @@ public class VitalController {
     public ResponseEntity<List<VitalResponse>> getByPatient(@PathVariable Long patientId) {
         return ResponseEntity.ok(vitalService.getByPatient(patientId));
     }
+
+    @GetMapping("/latest")
+    public ResponseEntity<VitalResponse> getLatest(@PathVariable Long patientId) {
+        return ResponseEntity.ok(vitalService.getLatest(patientId));
+    }
 }
