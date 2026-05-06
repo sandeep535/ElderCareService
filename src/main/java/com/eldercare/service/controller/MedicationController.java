@@ -26,8 +26,10 @@ public class MedicationController {
     }
 
     @GetMapping("/medication-master")
-    public ResponseEntity<List<MedicationMasterResponse>> getMedicationCatalog() {
-        return ResponseEntity.ok(medicationService.getMedicationCatalog());
+    @PreAuthorize("hasAnyRole('ADMIN', 'NURSE', 'DOCTOR')")
+    public ResponseEntity<List<MedicationMasterResponse>> getMedicationCatalog(
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(medicationService.getMedicationCatalog(search));
     }
 
     @PostMapping("/medication-master")
@@ -45,7 +47,7 @@ public class MedicationController {
     }
 
     @PostMapping("/patients/{patientId}/medications")
-    @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
     public ResponseEntity<PatientMedicationResponse> prescribeMedication(@PathVariable Long patientId,
                                                                         @Valid @RequestBody PatientMedicationRequest request) {
         return ResponseEntity.ok(medicationService.prescribe(patientId, request));
@@ -54,6 +56,14 @@ public class MedicationController {
     @GetMapping("/patients/{patientId}/medications")
     public ResponseEntity<List<PatientMedicationResponse>> getPrescriptions(@PathVariable Long patientId) {
         return ResponseEntity.ok(medicationService.getActivePrescriptions(patientId));
+    }
+
+    @PutMapping("/patients/{patientId}/medications/{prescriptionId}")
+    @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR')")
+    public ResponseEntity<PatientMedicationResponse> updatePrescription(@PathVariable Long patientId,
+                                                                        @PathVariable Long prescriptionId,
+                                                                        @Valid @RequestBody PatientMedicationRequest request) {
+        return ResponseEntity.ok(medicationService.updatePrescription(patientId, prescriptionId, request));
     }
 
     @PutMapping("/patients/{patientId}/medications/{prescriptionId}/stop")

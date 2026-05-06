@@ -2,9 +2,11 @@ package com.eldercare.service.dto;
 
 public record MedicationMasterResponse(
         Long id,
-        String name,
+        String drugName,
         String genericName,
-        String strength,
-        String form,
+        String defaultStrength,
+        String defaultStrengthUnit,
+        String defaultDoseForm,
+        String manufacturer,
         boolean active
 ) {}

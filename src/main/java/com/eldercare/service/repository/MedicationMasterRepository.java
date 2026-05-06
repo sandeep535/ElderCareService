@@ -7,5 +7,9 @@ import java.util.List;
 
 public interface MedicationMasterRepository extends JpaRepository<MedicationMasterEntity, Long> {
 
-    List<MedicationMasterEntity> findByActiveTrueOrderByNameAsc();
+    List<MedicationMasterEntity> findByActiveTrueOrderByDrugNameAsc();
+
+    List<MedicationMasterEntity> findByDrugNameContainingIgnoreCaseAndActiveTrueOrderByDrugNameAsc(String drugName);
+
+    boolean existsByDrugNameIgnoreCase(String drugName);
 }

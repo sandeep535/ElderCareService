@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "patient_medication")
@@ -24,23 +24,74 @@ public class PatientMedicationEntity extends BaseEntity {
     @JoinColumn(name = "medication_id", nullable = false)
     private MedicationMasterEntity medication;
 
-    @Column(name = "dose", length = 100, nullable = false)
-    private String dose;
+    @Column(name = "rx_norm", length = 50)
+    private String rxNorm;
 
-    @Column(name = "frequency", nullable = false)
-    private int frequency;
+    @Column(name = "order_priority", length = 50)
+    private String orderPriority;
 
-    @Column(name = "duration_days", nullable = false)
-    private int durationDays;
+    @Column(name = "indication", length = 300)
+    private String indication;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Column(name = "strength_value", length = 50)
+    private String strengthValue;
 
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Column(name = "strength_unit", length = 50)
+    private String strengthUnit;
 
-    @Column(name = "instructions", columnDefinition = "TEXT")
-    private String instructions;
+    @Column(name = "dose_form", length = 100)
+    private String doseForm;
+
+    @Column(name = "dose_amount", length = 100)
+    private String doseAmount;
+
+    @Column(name = "route", length = 50)
+    private String route;
+
+    @Column(name = "frequency", length = 50)
+    private String frequency;
+
+    @Column(name = "prn_reason", length = 300)
+    private String prnReason;
+
+    @Column(name = "prn_max_dose", length = 100)
+    private String prnMaxDose;
+
+    @Column(name = "iv_rate", length = 50)
+    private String ivRate;
+
+    @Column(name = "iv_rate_unit", length = 50)
+    private String ivRateUnit;
+
+    @Column(name = "iv_volume", length = 50)
+    private String ivVolume;
+
+    @Column(name = "start_date_time")
+    private LocalDateTime startDateTime;
+
+    @Column(name = "stop_date_time")
+    private LocalDateTime stopDateTime;
+
+    @Column(name = "duration", length = 100)
+    private String duration;
+
+    @Column(name = "ordering_provider", length = 200)
+    private String orderingProvider;
+
+    @Column(name = "sig", columnDefinition = "TEXT")
+    private String sig;
+
+    @Column(name = "admin_instructions", columnDefinition = "TEXT")
+    private String adminInstructions;
+
+    @Column(name = "pharmacy_comments", columnDefinition = "TEXT")
+    private String pharmacyComments;
+
+    @Column(name = "ack_allergies_reviewed")
+    private boolean ackAllergiesReviewed = false;
+
+    @Column(name = "ack_dupe_reviewed")
+    private boolean ackDupeReviewed = false;
 
     @Column(name = "active", nullable = false)
     private boolean active = true;

@@ -65,18 +65,25 @@ public class MedicationService {
         this.auditService = auditService;
     }
 
-    public List<MedicationMasterResponse> getMedicationCatalog() {
-        return medicationMasterRepository.findByActiveTrueOrderByNameAsc().stream()
-                .map(this::toMasterResponse).toList();
+    public List<MedicationMasterResponse> getMedicationCatalog(String search) {
+        if (search == null || search.isBlank()) {
+            return medicationMasterRepository.findByActiveTrueOrderByDrugNameAsc()
+                    .stream().map(this::toMasterResponse).toList();
+        }
+        return medicationMasterRepository
+                .findByDrugNameContainingIgnoreCaseAndActiveTrueOrderByDrugNameAsc(search)
+                .stream().map(this::toMasterResponse).toList();
     }
 
     @Transactional
     public MedicationMasterResponse createMedicationMaster(MedicationMasterRequest request) {
         MedicationMasterEntity entity = new MedicationMasterEntity();
-        entity.setName(request.name());
+        entity.setDrugName(request.drugName());
         entity.setGenericName(request.genericName());
-        entity.setStrength(request.strength());
-        entity.setForm(request.form());
+        entity.setDefaultStrength(request.defaultStrength());
+        entity.setDefaultStrengthUnit(request.defaultStrengthUnit());
+        entity.setDefaultDoseForm(request.defaultDoseForm());
+        entity.setManufacturer(request.manufacturer());
         entity.setActive(request.active() == null || request.active());
         medicationMasterRepository.save(entity);
         return toMasterResponse(entity);
@@ -86,10 +93,12 @@ public class MedicationService {
     public MedicationMasterResponse updateMedicationMaster(Long id, MedicationMasterRequest request) {
         MedicationMasterEntity entity = medicationMasterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medication master", id));
-        entity.setName(request.name());
+        entity.setDrugName(request.drugName());
         entity.setGenericName(request.genericName());
-        entity.setStrength(request.strength());
-        entity.setForm(request.form());
+        entity.setDefaultStrength(request.defaultStrength());
+        entity.setDefaultStrengthUnit(request.defaultStrengthUnit());
+        entity.setDefaultDoseForm(request.defaultDoseForm());
+        entity.setManufacturer(request.manufacturer());
         entity.setActive(request.active() == null || request.active());
         medicationMasterRepository.save(entity);
         return toMasterResponse(entity);
@@ -100,45 +109,38 @@ public class MedicationService {
         PatientEntity patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient", patientId));
 
-        MedicationMasterEntity medication = medicationMasterRepository.findById(request.medicationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Medication master", request.medicationId()));
-
-        if (request.slotCodes() == null || request.slotCodes().size() != request.frequency()) {
-            throw new ElderCareException("Slot codes must be provided and equal the requested frequency");
-        }
-
-        List<Integer> hours = resolveSlotHours(request.slotCodes());
-        if (hours.size() != request.frequency()) {
-            throw new ElderCareException("Slot codes count does not match frequency");
-        }
+        MedicationMasterEntity medication = medicationMasterRepository.findById(request.medicationMasterId())
+                .orElseThrow(() -> new ResourceNotFoundException("Medication master", request.medicationMasterId()));
 
         PatientMedicationEntity patientMedication = new PatientMedicationEntity();
         patientMedication.setPatient(patient);
         patientMedication.setMedication(medication);
-        patientMedication.setDose(request.dose());
+        patientMedication.setRxNorm(request.rxNorm());
+        patientMedication.setOrderPriority(request.orderPriority());
+        patientMedication.setIndication(request.indication());
+        patientMedication.setStrengthValue(request.strengthValue());
+        patientMedication.setStrengthUnit(request.strengthUnit());
+        patientMedication.setDoseForm(request.doseForm());
+        patientMedication.setDoseAmount(request.doseAmount());
+        patientMedication.setRoute(request.route());
         patientMedication.setFrequency(request.frequency());
-        patientMedication.setDurationDays(request.durationDays());
-        patientMedication.setStartDate(request.startDate());
-        patientMedication.setEndDate(request.startDate().plusDays(request.durationDays() - 1L));
-        patientMedication.setInstructions(request.instructions());
+        patientMedication.setPrnReason(request.prnReason());
+        patientMedication.setPrnMaxDose(request.prnMaxDose());
+        patientMedication.setIvRate(request.ivRate());
+        patientMedication.setIvRateUnit(request.ivRateUnit());
+        patientMedication.setIvVolume(request.ivVolume());
+        patientMedication.setStartDateTime(request.startDateTime());
+        patientMedication.setStopDateTime(request.stopDateTime());
+        patientMedication.setDuration(request.duration());
+        patientMedication.setOrderingProvider(request.orderingProvider());
+        patientMedication.setSig(request.sig());
+        patientMedication.setAdminInstructions(request.adminInstructions());
+        patientMedication.setPharmacyComments(request.pharmacyComments());
+        patientMedication.setAckAllergiesReviewed(request.ackAllergiesReviewed());
+        patientMedication.setAckDupeReviewed(request.ackDupeReviewed());
         patientMedication.setActive(true);
         patientMedication.setCreatedBy(resolveCurrentUserName());
         patientMedicationRepository.save(patientMedication);
-
-        List<MedicationSlotEntity> slots = new ArrayList<>();
-        for (int day = 0; day < request.durationDays(); day++) {
-            LocalDate date = request.startDate().plusDays(day);
-            for (Integer hour : hours) {
-                MedicationSlotEntity slot = new MedicationSlotEntity();
-                slot.setPatientMedication(patientMedication);
-                slot.setPatient(patient);
-                slot.setScheduledTime(date.atTime(hour, 0));
-                slot.setStatus("PENDING");
-                slot.setCreatedBy(resolveCurrentUserName());
-                slots.add(slot);
-            }
-        }
-        medicationSlotRepository.saveAll(slots);
 
         PatientMedicationResponse response = toPatientMedicationResponse(patientMedication);
         auditService.record(patientId, "MEDICATION", response);
@@ -258,23 +260,73 @@ public class MedicationService {
     }
 
     private MedicationMasterResponse toMasterResponse(MedicationMasterEntity entity) {
-        return new MedicationMasterResponse(entity.getId(), entity.getName(), entity.getGenericName(),
-                entity.getStrength(), entity.getForm(), entity.isActive());
+        return new MedicationMasterResponse(entity.getId(), entity.getDrugName(), entity.getGenericName(),
+                entity.getDefaultStrength(), entity.getDefaultStrengthUnit(),
+                entity.getDefaultDoseForm(), entity.getManufacturer(), entity.isActive());
+    }
+
+    @Transactional
+    public PatientMedicationResponse updatePrescription(Long patientId, Long prescriptionId, PatientMedicationRequest request) {
+        PatientMedicationEntity patientMedication = patientMedicationRepository.findById(prescriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient medication", prescriptionId));
+        if (!patientMedication.getPatient().getId().equals(patientId)) {
+            throw new ElderCareException("Prescription does not belong to the requested patient");
+        }
+        MedicationMasterEntity medication = medicationMasterRepository.findById(request.medicationMasterId())
+                .orElseThrow(() -> new ResourceNotFoundException("Medication master", request.medicationMasterId()));
+
+        patientMedication.setMedication(medication);
+        patientMedication.setRxNorm(request.rxNorm());
+        patientMedication.setOrderPriority(request.orderPriority());
+        patientMedication.setIndication(request.indication());
+        patientMedication.setStrengthValue(request.strengthValue());
+        patientMedication.setStrengthUnit(request.strengthUnit());
+        patientMedication.setDoseForm(request.doseForm());
+        patientMedication.setDoseAmount(request.doseAmount());
+        patientMedication.setRoute(request.route());
+        patientMedication.setFrequency(request.frequency());
+        patientMedication.setPrnReason(request.prnReason());
+        patientMedication.setPrnMaxDose(request.prnMaxDose());
+        patientMedication.setIvRate(request.ivRate());
+        patientMedication.setIvRateUnit(request.ivRateUnit());
+        patientMedication.setIvVolume(request.ivVolume());
+        patientMedication.setStartDateTime(request.startDateTime());
+        patientMedication.setStopDateTime(request.stopDateTime());
+        patientMedication.setDuration(request.duration());
+        patientMedication.setOrderingProvider(request.orderingProvider());
+        patientMedication.setSig(request.sig());
+        patientMedication.setAdminInstructions(request.adminInstructions());
+        patientMedication.setPharmacyComments(request.pharmacyComments());
+        patientMedication.setAckAllergiesReviewed(request.ackAllergiesReviewed());
+        patientMedication.setAckDupeReviewed(request.ackDupeReviewed());
+        patientMedication.setUpdatedBy(resolveCurrentUserName());
+        patientMedicationRepository.save(patientMedication);
+        return toPatientMedicationResponse(patientMedication);
     }
 
     private PatientMedicationResponse toPatientMedicationResponse(PatientMedicationEntity entity) {
-        return new PatientMedicationResponse(entity.getId(), entity.getPatient().getId(),
-                entity.getMedication().getId(), entity.getMedication().getName(), entity.getDose(),
-                entity.getFrequency(), entity.getDurationDays(), entity.getStartDate(), entity.getEndDate(),
-                entity.isActive(), entity.getInstructions());
+        return new PatientMedicationResponse(
+                entity.getId(), entity.getPatient().getId(),
+                entity.getMedication().getId(), entity.getMedication().getDrugName(),
+                entity.getRxNorm(), entity.getOrderPriority(), entity.getIndication(),
+                entity.getStrengthValue(), entity.getStrengthUnit(),
+                entity.getDoseForm(), entity.getDoseAmount(),
+                entity.getRoute(), entity.getFrequency(),
+                entity.getPrnReason(), entity.getPrnMaxDose(),
+                entity.getIvRate(), entity.getIvRateUnit(), entity.getIvVolume(),
+                entity.getStartDateTime(), entity.getStopDateTime(),
+                entity.getDuration(), entity.getOrderingProvider(),
+                entity.getSig(), entity.getAdminInstructions(), entity.getPharmacyComments(),
+                entity.isAckAllergiesReviewed(), entity.isAckDupeReviewed(), entity.isActive()
+        );
     }
 
     private MedicationSlotResponse toSlotResponse(MedicationSlotEntity entity) {
         UserEntity givenBy = entity.getGivenBy();
         UserInfoResponse givenByInfo = givenBy != null ? buildUserInfo(givenBy) : null;
         return new MedicationSlotResponse(entity.getId(), entity.getPatientMedication().getId(),
-                entity.getPatient().getId(), entity.getPatientMedication().getMedication().getName(),
-                entity.getPatientMedication().getDose(), entity.getScheduledTime(), entity.getStatus(),
+                entity.getPatient().getId(), entity.getPatientMedication().getMedication().getDrugName(),
+                entity.getPatientMedication().getDoseAmount(), entity.getScheduledTime(), entity.getStatus(),
                 entity.getGivenAt(), givenByInfo, entity.getNotes());
     }
 

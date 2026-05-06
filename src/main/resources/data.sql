@@ -58,6 +58,63 @@ INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) 
 ('4', 'Minor',     'MINOR',     'SURGERY_TYPE', true),
 ('5', 'Major',     'MAJOR',     'SURGERY_TYPE', true);
 
+DELETE FROM master_table WHERE type = 'MED_ORDER_PRIORITY';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'Routine',        'ROUTINE', 'MED_ORDER_PRIORITY', true),
+('2', 'Now (single dose)', 'NOW',  'MED_ORDER_PRIORITY', true),
+('3', 'STAT',           'STAT',    'MED_ORDER_PRIORITY', true);
+
+DELETE FROM master_table WHERE type = 'STRENGTH_UNIT';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'mg',            'MG',     'STRENGTH_UNIT', true),
+('2', 'mcg',           'MCG',    'STRENGTH_UNIT', true),
+('3', 'g',             'G',      'STRENGTH_UNIT', true),
+('4', 'mEq',           'MEQ',    'STRENGTH_UNIT', true),
+('5', 'Units (insulin)','UNITS', 'STRENGTH_UNIT', true),
+('6', 'IU',            'IU',     'STRENGTH_UNIT', true),
+('7', '%',             'PCT',    'STRENGTH_UNIT', true),
+('8', 'mg/mL',         'MG_ML',  'STRENGTH_UNIT', true);
+
+DELETE FROM master_table WHERE type = 'DOSE_FORM';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1', 'Tablet',                      'TABLET',       'DOSE_FORM', true),
+('2', 'Capsule',                     'CAPSULE',      'DOSE_FORM', true),
+('3', 'Oral solution / suspension',  'ORAL_SOLUTION','DOSE_FORM', true),
+('4', 'Injection (syringe)',         'INJECTION',    'DOSE_FORM', true),
+('5', 'IV solution / admixture',     'IV_SOLUTION',  'DOSE_FORM', true),
+('6', 'Transdermal patch',           'PATCH',        'DOSE_FORM', true),
+('7', 'Inhaler',                     'INHALER',      'DOSE_FORM', true),
+('8', 'Topical',                     'TOPICAL',      'DOSE_FORM', true),
+('9', 'Suppository',                 'SUPPOSITORY',  'DOSE_FORM', true);
+
+DELETE FROM master_table WHERE type = 'MED_ROUTE';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1',  'PO (oral)',                    'PO',   'MED_ROUTE', true),
+('2',  'NG / enteral tube',            'NG',   'MED_ROUTE', true),
+('3',  'IV push',                      'IV',   'MED_ROUTE', true),
+('4',  'IV piggyback / intermittent',  'IVPB', 'MED_ROUTE', true),
+('5',  'IM',                           'IM',   'MED_ROUTE', true),
+('6',  'Subcutaneous',                 'SC',   'MED_ROUTE', true),
+('7',  'Sublingual',                   'SL',   'MED_ROUTE', true),
+('8',  'Topical',                      'TOP',  'MED_ROUTE', true),
+('9',  'Inhalation',                   'INH',  'MED_ROUTE', true),
+('10', 'Ophthalmic',                   'OPH',  'MED_ROUTE', true);
+
+DELETE FROM master_table WHERE type = 'MED_FREQUENCY';
+INSERT INTO master_table (lookup_value, lookup_item, lookup_code, type, active) VALUES
+('1',  'Once only',       'ONCE',  'MED_FREQUENCY', true),
+('2',  'Daily',           'DAILY', 'MED_FREQUENCY', true),
+('3',  'BID',             'BID',   'MED_FREQUENCY', true),
+('4',  'TID',             'TID',   'MED_FREQUENCY', true),
+('5',  'QID',             'QID',   'MED_FREQUENCY', true),
+('6',  'Every 4 hours',   'Q4H',   'MED_FREQUENCY', true),
+('7',  'Every 6 hours',   'Q6H',   'MED_FREQUENCY', true),
+('8',  'Every 8 hours',   'Q8H',   'MED_FREQUENCY', true),
+('9',  'Every 12 hours',  'Q12H',  'MED_FREQUENCY', true),
+('10', 'At bedtime',      'QHS',   'MED_FREQUENCY', true),
+('11', 'PRN',             'PRN',   'MED_FREQUENCY', true),
+('12', 'Weekly',          'WKLY',  'MED_FREQUENCY', true);
+
 -- ============================================================
 -- USER SEED DATA: 5 Nurses + 5 Doctors
 -- Password for all: Nurse@123 / Doctor@123

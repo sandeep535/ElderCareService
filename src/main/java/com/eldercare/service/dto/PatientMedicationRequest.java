@@ -1,17 +1,32 @@
 package com.eldercare.service.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDate;
-import java.util.List;
+
+import java.time.LocalDateTime;
 
 public record PatientMedicationRequest(
-        @NotNull(message = "Medication id is required") Long medicationId,
-        @NotBlank(message = "Dose is required") String dose,
-        @Min(value = 1, message = "Frequency must be at least 1") int frequency,
-        @Min(value = 1, message = "Duration days must be at least 1") int durationDays,
-        @NotNull(message = "Start date is required") LocalDate startDate,
-        String instructions,
-        List<String> slotCodes
+        @NotNull(message = "Medication id is required") Long medicationMasterId,
+        String rxNorm,
+        String orderPriority,
+        String indication,
+        String strengthValue,
+        String strengthUnit,
+        String doseForm,
+        String doseAmount,
+        String route,
+        String frequency,
+        String prnReason,
+        String prnMaxDose,
+        String ivRate,
+        String ivRateUnit,
+        String ivVolume,
+        LocalDateTime startDateTime,
+        LocalDateTime stopDateTime,
+        String duration,
+        String orderingProvider,
+        String sig,
+        String adminInstructions,
+        String pharmacyComments,
+        boolean ackAllergiesReviewed,
+        boolean ackDupeReviewed
 ) {}
