@@ -36,8 +36,4 @@ public class PatientTaskEntity extends BaseEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private UserEntity assignedTo;
 }

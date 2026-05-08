@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,21 +24,15 @@ public class PatientTaskService {
     private final PatientRepository patientRepository;
     private final TaskRepository taskRepository;
     private final TaskGroupRepository taskGroupRepository;
-    private final UserRepository userRepository;
-    private final UserDetailsRepository userDetailsRepository;
 
     public PatientTaskService(PatientTaskRepository patientTaskRepository,
                               PatientRepository patientRepository,
                               TaskRepository taskRepository,
-                              TaskGroupRepository taskGroupRepository,
-                              UserRepository userRepository,
-                              UserDetailsRepository userDetailsRepository) {
+                              TaskGroupRepository taskGroupRepository) {
         this.patientTaskRepository = patientTaskRepository;
         this.patientRepository = patientRepository;
         this.taskRepository = taskRepository;
         this.taskGroupRepository = taskGroupRepository;
-        this.userRepository = userRepository;
-        this.userDetailsRepository = userDetailsRepository;
     }
 
     @Transactional
@@ -50,7 +46,6 @@ public class PatientTaskService {
         }
 
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity assignedTo = resolveUser(request.assignedToUserId());
         String status = request.status() != null ? request.status().toUpperCase() : "PENDING";
 
         List<PatientTaskEntity> entities = new ArrayList<>();
@@ -59,8 +54,7 @@ public class PatientTaskService {
             for (Long taskId : request.taskIds()) {
                 TaskEntity task = taskRepository.findById(taskId)
                         .orElseThrow(() -> new ResourceNotFoundException("Task", taskId));
-                PatientTaskEntity entity = buildEntity(patient, task, null, request, status, assignedTo, currentUser);
-                entities.add(entity);
+                entities.add(buildEntity(patient, task, null, request, status, currentUser));
             }
         }
 
@@ -68,8 +62,7 @@ public class PatientTaskService {
             for (Long groupId : request.taskGroupIds()) {
                 TaskGroupEntity group = taskGroupRepository.findById(groupId)
                         .orElseThrow(() -> new ResourceNotFoundException("Task group", groupId));
-                PatientTaskEntity entity = buildEntity(patient, null, group, request, status, assignedTo, currentUser);
-                entities.add(entity);
+                entities.add(buildEntity(patient, null, group, request, status, currentUser));
             }
         }
 
@@ -87,7 +80,7 @@ public class PatientTaskService {
         }
 
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-        entity.setScheduledDateTime(request.scheduledDateTime());
+        entity.setScheduledDateTime(parseScheduledDateTime(request.scheduledDateTime()));
         entity.setStatus(request.status() != null ? request.status().toUpperCase() : entity.getStatus());
         entity.setNotes(request.notes());
         entity.setUpdatedBy(currentUser);
@@ -101,9 +94,6 @@ public class PatientTaskService {
             entity.setTaskGroup(taskGroupRepository.findById(request.taskGroupIds().get(0))
                     .orElseThrow(() -> new ResourceNotFoundException("Task group", request.taskGroupIds().get(0))));
             entity.setTask(null);
-        }
-        if (request.assignedToUserId() != null) {
-            entity.setAssignedTo(resolveUser(request.assignedToUserId()));
         }
 
         patientTaskRepository.save(entity);
@@ -128,34 +118,39 @@ public class PatientTaskService {
     }
 
     private PatientTaskEntity buildEntity(PatientEntity patient, TaskEntity task, TaskGroupEntity group,
-                                          PatientTaskRequest request, String status,
-                                          UserEntity assignedTo, String currentUser) {
+                                          PatientTaskRequest request, String status, String currentUser) {
         PatientTaskEntity entity = new PatientTaskEntity();
         entity.setPatient(patient);
         entity.setTask(task);
         entity.setTaskGroup(group);
-        entity.setScheduledDateTime(request.scheduledDateTime());
+        entity.setScheduledDateTime(parseScheduledDateTime(request.scheduledDateTime()));
         entity.setStatus(status);
         entity.setNotes(request.notes());
-        entity.setAssignedTo(assignedTo);
         entity.setCreatedBy(currentUser);
         return entity;
     }
 
-    private UserEntity resolveUser(Long userId) {
-        if (userId == null) return null;
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+    private LocalDateTime parseScheduledDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            throw new ElderCareException("Scheduled date time is required");
+        }
+        List<DateTimeFormatter> formatters = List.of(
+                DateTimeFormatter.ofPattern("dd-MM-yy HH:mm"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"),
+                DateTimeFormatter.ofPattern("dd-MM-yy HH:mm:ss"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+        );
+        for (DateTimeFormatter fmt : formatters) {
+            try {
+                return LocalDateTime.parse(value.trim(), fmt);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        throw new ElderCareException(
+                "Invalid scheduledDateTime format '" + value + "'. Expected: dd-MM-yy HH:mm (e.g. 08-05-26 20:37)");
     }
 
     private PatientTaskResponse toResponse(PatientTaskEntity e) {
-        String assignedToName = null;
-        if (e.getAssignedTo() != null) {
-            var details = userDetailsRepository.findByUserId(e.getAssignedTo().getId()).orElse(null);
-            assignedToName = details != null
-                    ? details.getFirstName() + " " + details.getLastName()
-                    : e.getAssignedTo().getUsername();
-        }
         return new PatientTaskResponse(
                 e.getId(),
                 e.getPatient().getId(),
@@ -166,8 +161,6 @@ public class PatientTaskService {
                 e.getScheduledDateTime(),
                 e.getStatus(),
                 e.getNotes(),
-                e.getAssignedTo() != null ? e.getAssignedTo().getId() : null,
-                assignedToName,
                 e.getCreatedOn(),
                 e.getCreatedBy()
         );

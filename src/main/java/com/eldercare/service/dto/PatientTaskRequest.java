@@ -1,15 +1,13 @@
 package com.eldercare.service.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public record PatientTaskRequest(
         List<Long> taskIds,
         List<Long> taskGroupIds,
-        @NotNull(message = "Scheduled date time is required") LocalDateTime scheduledDateTime,
+        @NotBlank(message = "Scheduled date time is required") String scheduledDateTime,
         String status,
-        String notes,
-        Long assignedToUserId
+        String notes
 ) {}

@@ -12,8 +12,6 @@ public record PatientTaskResponse(
         LocalDateTime scheduledDateTime,
         String status,
         String notes,
-        Long assignedToUserId,
-        String assignedToName,
         LocalDateTime createdOn,
         String createdBy
 ) {}
