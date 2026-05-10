@@ -33,4 +33,11 @@ public class PatientEntity extends BaseEntity {
 
     @Column(name = "profile_photo", length = 500)
     private String profilePhoto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enquire_from_id")
+    private MasterTableEntity enquireFrom;
+
+    @Column(name = "consent_form", nullable = false)
+    private boolean consentForm = false;
 }

@@ -14,7 +14,7 @@ public class MasterTableEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "lookup_value", length = 10)
+    @Column(name = "lookup_value", length = 100)
     private String lookupValue;
 
     @Column(name = "lookup_item", nullable = false, length = 100)

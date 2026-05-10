@@ -8,5 +8,7 @@ public record PatientRequest(
         @NotBlank(message = "First name is required") String firstName,
         @NotBlank(message = "Last name is required") String lastName,
         LocalDate dob,
-        String gender
+        String gender,
+        Long enquireFromId,
+        Boolean consentForm
 ) {}

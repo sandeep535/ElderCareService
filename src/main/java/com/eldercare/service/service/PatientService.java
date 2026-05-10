@@ -2,10 +2,12 @@ package com.eldercare.service.service;
 
 import com.eldercare.service.dto.PatientRequest;
 import com.eldercare.service.dto.PatientResponse;
+import com.eldercare.service.entity.MasterTableEntity;
 import com.eldercare.service.entity.PatientEntity;
 import com.eldercare.service.entity.PatientJourneyEntity;
 import com.eldercare.service.exception.ElderCareException;
 import com.eldercare.service.exception.ResourceNotFoundException;
+import com.eldercare.service.repository.MasterTableRepository;
 import com.eldercare.service.repository.PatientJourneyRepository;
 import com.eldercare.service.repository.PatientRepository;
 import org.apache.logging.log4j.LogManager;
@@ -36,14 +38,17 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final PatientJourneyRepository journeyRepository;
+    private final MasterTableRepository masterTableRepository;
 
     @Value("${app.upload.dir:uploads/patient-photos}")
     private String uploadDir;
 
     public PatientService(PatientRepository patientRepository,
-                          PatientJourneyRepository journeyRepository) {
+                          PatientJourneyRepository journeyRepository,
+                          MasterTableRepository masterTableRepository) {
         this.patientRepository = patientRepository;
         this.journeyRepository = journeyRepository;
+        this.masterTableRepository = masterTableRepository;
     }
 
     @Transactional
@@ -55,6 +60,8 @@ public class PatientService {
         patient.setLastName(request.lastName());
         patient.setDob(request.dob());
         patient.setGender(request.gender());
+        patient.setEnquireFrom(resolveEnquireFrom(request.enquireFromId()));
+        patient.setConsentForm(request.consentForm() != null && request.consentForm());
         patient.setCreatedBy(currentUser);
         patientRepository.save(patient);
 
@@ -98,6 +105,8 @@ public class PatientService {
         patient.setLastName(request.lastName());
         patient.setDob(request.dob());
         patient.setGender(request.gender());
+        patient.setEnquireFrom(resolveEnquireFrom(request.enquireFromId()));
+        if (request.consentForm() != null) patient.setConsentForm(request.consentForm());
         patient.setUpdatedBy(currentUser);
         patientRepository.save(patient);
 
@@ -184,6 +193,12 @@ public class PatientService {
         return String.format("EC-%d-%04d", Year.now().getValue(), id);
     }
 
+    private MasterTableEntity resolveEnquireFrom(Long id) {
+        if (id == null) return null;
+        return masterTableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enquire from master entry", id));
+    }
+
     private PatientResponse toResponse(PatientEntity p, PatientJourneyEntity journey) {
         List<String> pending = new ArrayList<>();
         boolean isComplete = false;
@@ -203,6 +218,9 @@ public class PatientService {
                 p.getDob(),
                 p.getGender(),
                 p.getProfilePhoto() != null ? "/api/patients/" + p.getId() + "/photo" : null,
+                p.getEnquireFrom() != null ? p.getEnquireFrom().getId() : null,
+                p.getEnquireFrom() != null ? p.getEnquireFrom().getLookupValue() : null,
+                p.isConsentForm(),
                 isComplete ? "COMPLETE" : "INCOMPLETE",
                 pending
         );

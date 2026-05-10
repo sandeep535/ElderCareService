@@ -11,6 +11,9 @@ public record PatientResponse(
         LocalDate dob,
         String gender,
         String profilePhotoUrl,
+        Long enquireFromId,
+        String enquireFromValue,
+        boolean consentForm,
         String completionStatus,
         List<String> pendingSections
 ) {}
