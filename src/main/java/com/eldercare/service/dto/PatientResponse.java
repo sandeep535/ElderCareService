@@ -10,6 +10,7 @@ public record PatientResponse(
         String lastName,
         LocalDate dob,
         String gender,
+        String profilePhotoUrl,
         String completionStatus,
         List<String> pendingSections
 ) {}

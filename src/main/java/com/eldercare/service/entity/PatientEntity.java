@@ -30,4 +30,7 @@ public class PatientEntity extends BaseEntity {
 
     @Column(name = "patient_id", unique = true, length = 50)
     private String patientId;
+
+    @Column(name = "profile_photo", length = 500)
+    private String profilePhoto;
 }
